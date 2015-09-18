@@ -19,20 +19,33 @@
                (replace pattern replacement (cdr lst))))))
 
 (define (change-person phrase)
-  (many-replace '((you i) (are am) (your my) (i you) (me you) (am are) (my your)) phrase))
+  (many-replace2 '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) phrase))
 
+(define (many-replace2 replacement-pairs lst)
+  (cond ((null? lst) '())
+        (else 
+         (cons (replace2 replacement-pairs (car lst)) (many-replace2 replacement-pairs (cdr lst))))))
 
+(define (replace2 replacement-pairs word)
+  (cond ((null? replacement-pairs) word)
+        ((equal? (car (car replacement-pairs)) word) (cadr (car replacement-pairs)))
+        (else (replace2 (cdr replacement-pairs) word))))
+  
 
 (define (qualifier)
   (pick-random '((you seem to think)
                  (you feel that)
                  (why do you believe)
-                 (why do you say))))
+                 (why do you say)
+                 (why do you think problem is that)
+                 (when did you explore that))))
 (define (hedge)
   (pick-random '((please go on)
                  (many people have the same sorts of feelings)
                  (many of my patients have told me the same thing)
-                 (please continue))))
+                 (please continue)
+                 (it is very widespread problem)
+                 (i understand))))
 
 (define (fifty-fifty)
   (= (random 2) 0))
@@ -56,3 +69,4 @@
   (print (list 'hello name))
   (print '(what seems to be the trouble?))
   (doctor-driver-loop name))
+(visit-doctor 'Dima)
