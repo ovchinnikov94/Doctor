@@ -67,6 +67,14 @@
   ;               (change-person user-response)))
   ;      (else (hedge))))
 
+(define (ask-patient-name)
+  (newline)
+  (print '(next!))
+  (newline)
+  (print '(who are you?))
+  (car (read)))
+
+
 (define (doctor-driver-loop name prev-lst)
   (newline)
   (print '**)
@@ -74,13 +82,18 @@
     (let ((reply-sentence (reply user-response prev-lst)))
       (cond ((equal? user-response '(goodbye))
          (print (list 'goodbye name))
-         (print '(see you next week)))
+         (print '(see you next week))
+         (visit-doctor))
         (else
          (print reply-sentence)
               (doctor-driver-loop name (cons reply-sentence prev-lst)))))))
 
-(define (visit-doctor name)
-  (print (list 'hello name))
-  (print '(what seems to be the trouble?))
-  (doctor-driver-loop name '()))
-(visit-doctor 'Dima)
+(define (visit-doctor)
+  (let ((name (ask-patient-name)))
+    (cond ((equal? name 'supertime)
+           (print '(it is time to go home)))
+          (else 
+           (print (list 'hello name))
+           (print '(what seems to be the trouble?))
+           (doctor-driver-loop name '())))))
+(visit-doctor)
