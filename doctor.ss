@@ -21,12 +21,12 @@
 (define (change-person phrase)
   (many-replace2 '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) phrase))
 
-(define (many-replace2 replacement-pairs lst)
+(define (many-replace2 replacement-pairs lst) ;переделанная процедура для замены слов во фразе
   (cond ((null? lst) '())
         (else 
          (cons (replace2 replacement-pairs (car lst)) (many-replace2 replacement-pairs (cdr lst))))))
 
-(define (replace2 replacement-pairs word)
+(define (replace2 replacement-pairs word) ;переделанная процедура для замены слов
   (cond ((null? replacement-pairs) word)
         ((equal? (car (car replacement-pairs)) word) (cadr (car replacement-pairs)))
         (else (replace2 (cdr replacement-pairs) word))))
@@ -47,26 +47,40 @@
                  (it is very widespread problem)
                  (i understand))))
 
-(define (fifty-fifty)
-  (= (random 2) 0))
+;(define (fifty-fifty)
+;  (= (random 2) 0))
 
-(define (reply user-response)
-  (cond ((fifty-fifty)
-         (append (qualifier)
-                 (change-person user-response)))
-        (else (hedge))))
-(define (doctor-driver-loop name)
+(define (prob) (random 3))
+
+(define (reply user-response previous-lst)
+  (let ((rndm (prob)))
+    (cond ((and (= rndm 0) (not (null? previous-lst)))
+           (append '(earlier you said) (pick-random previous-lst)))
+          ((= rndm 1)
+           (append (qualifier)
+                   (change-person user-response)))
+          (else (hedge)))))
+           
+  
+ ; (cond ((fifty-fifty)
+  ;       (append (qualifier)
+  ;               (change-person user-response)))
+  ;      (else (hedge))))
+
+(define (doctor-driver-loop name prev-lst)
   (newline)
   (print '**)
   (let ((user-response (read)))
-  (cond ((equal? user-response '(goodbye))
+    (let ((reply-sentence (reply user-response prev-lst)))
+      (cond ((equal? user-response '(goodbye))
          (print (list 'goodbye name))
          (print '(see you next week)))
-        (else (print (reply user-response))
-              (doctor-driver-loop name)))))
+        (else
+         (print reply-sentence)
+              (doctor-driver-loop name (cons reply-sentence prev-lst)))))))
 
 (define (visit-doctor name)
   (print (list 'hello name))
   (print '(what seems to be the trouble?))
-  (doctor-driver-loop name))
+  (doctor-driver-loop name '()))
 (visit-doctor 'Dima)
