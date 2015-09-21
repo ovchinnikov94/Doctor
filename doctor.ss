@@ -52,10 +52,11 @@
 
 (define (prob) (random 3))
 
-(define (is-depressed-or-parents user-resp)
+(define (is-depressed-or-parents user-resp) ;процедура, проверяющая идет ли речь о родителях или депрессии
   (cond ((null? user-resp)
          0)
-        ((or (equal? (car user-resp) 'depressed) (equal? (car user-resp) 'suicide))
+        ((or (equal? (car user-resp) 'depressed)
+             (equal? (car user-resp) 'suicide))
          1)
         ((or (equal? (car user-resp) 'mother)
              (equal? (car user-resp) 'father)
@@ -70,16 +71,16 @@
   (let ((rndm (prob))
         (check-depressed-parents (is-depressed-or-parents user-response)))
     (cond ((< (length user-response) 3)
-           '(Could you say more?))
+           '(could you say more?))
           ((> check-depressed-parents 0)
            (cond ((= check-depressed-parents 1)
-                  (pick-random '((when you fell depressed, go out for ice cream)
+                  (pick-random '((when you feel depressed, go out for ice cream)
                                  (depression is a disease that can be treated))))
                  (else
                   (pick-random '((tell me more about your family)
                                  (why do you feel that way about your parents?))))))
           ((and (= rndm 0) (not (null? previous-lst)))
-           (append '(earlier you said) (pick-random previous-lst)))
+           (append '(earlier you said) (change-person (pick-random previous-lst))))
           ((= rndm 1)
            (append (qualifier)
                    (change-person user-response)))
@@ -91,11 +92,13 @@
   ;               (change-person user-response)))
   ;      (else (hedge))))
 
-(define (ask-patient-name)
+(define (ask-patient-name);процедура считывания имени
   (newline)
   (print '(next!))
   (newline)
   (print '(who are you?))
+  (newline)
+  (print '**)
   (car (read)))
 
 
@@ -110,7 +113,7 @@
          (visit-doctor))
         (else
          (print reply-sentence)
-              (doctor-driver-loop name (cons reply-sentence prev-lst)))))))
+              (doctor-driver-loop name (cons user-response prev-lst)))))))
 
 (define (visit-doctor)
   (let ((name (ask-patient-name)))
