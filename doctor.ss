@@ -2,34 +2,34 @@
 (define (pick-random lst)
   (list-ref lst (random (length lst))))
 
-(define (many-replace replacement-pairs lst)
-  (cond ((null? replacement-pairs) lst)
-        (else (let ((pat-rep (car replacement-pairs)))
-                (replace (car pat-rep)
-                         (cadr pat-rep)
-                         (many-replace (cdr replacement-pairs) lst))))))
+;(define (many-replace replacement-pairs lst)
+;  (cond ((null? replacement-pairs) lst)
+;        (else (let ((pat-rep (car replacement-pairs)))
+;                (replace (car pat-rep)
+;                         (cadr pat-rep)
+;                         (many-replace (cdr replacement-pairs) lst))))))
 
-(define (replace pattern replacement lst)
-  (cond ((null? lst) '())
-        ((equal? (car lst) pattern)
-         (cons replacement
-               (replace pattern replacement (cdr lst))))
-        (else
-         (cons (car lst)
-               (replace pattern replacement (cdr lst))))))
+;(define (replace pattern replacement lst)
+;  (cond ((null? lst) '())
+ ;       ((equal? (car lst) pattern)
+ ;        (cons replacement
+ ;              (replace pattern replacement (cdr lst))))
+ ;       (else
+ ;        (cons (car lst)
+ ;              (replace pattern replacement (cdr lst))))))
 
 (define (change-person phrase)
-  (many-replace2 '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) phrase))
+  (many-replace '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) phrase))
 
-(define (many-replace2 replacement-pairs lst) ;переделанная процедура для замены слов во фразе
+(define (many-replace replacement-pairs lst) ;переделанная процедура для замены слов во фразе
   (cond ((null? lst) '())
         (else 
-         (cons (replace2 replacement-pairs (car lst)) (many-replace2 replacement-pairs (cdr lst))))))
+         (cons (replace replacement-pairs (car lst)) (many-replace replacement-pairs (cdr lst))))))
 
-(define (replace2 replacement-pairs word) ;переделанная процедура для замены слов
+(define (replace replacement-pairs word) ;переделанная процедура для замены слов
   (cond ((null? replacement-pairs) word)
         ((equal? (car (car replacement-pairs)) word) (cadr (car replacement-pairs)))
-        (else (replace2 (cdr replacement-pairs) word))))
+        (else (replace (cdr replacement-pairs) word))))
   
 
 (define (qualifier)
@@ -52,9 +52,33 @@
 
 (define (prob) (random 3))
 
+(define (is-depressed-or-parents user-resp)
+  (cond ((null? user-resp)
+         0)
+        ((or (equal? (car user-resp) 'depressed) (equal? (car user-resp) 'suicide))
+         1)
+        ((or (equal? (car user-resp) 'mother)
+             (equal? (car user-resp) 'father)
+             (equal? (car user-resp) 'family)
+             (equal? (car user-resp) 'mom)
+             (equal? (car user-resp) 'dad))
+         2)
+        (else (is-depressed-or-parents (cdr user-resp)))))
+  
+
 (define (reply user-response previous-lst)
-  (let ((rndm (prob)))
-    (cond ((and (= rndm 0) (not (null? previous-lst)))
+  (let ((rndm (prob))
+        (check-depressed-parents (is-depressed-or-parents user-response)))
+    (cond ((< (length user-response) 3)
+           '(Could you say more?))
+          ((> check-depressed-parents 0)
+           (cond ((= check-depressed-parents 1)
+                  (pick-random '((when you fell depressed, go out for ice cream)
+                                 (depression is a disease that can be treated))))
+                 (else
+                  (pick-random '((tell me more about your family)
+                                 (why do you feel that way about your parents?))))))
+          ((and (= rndm 0) (not (null? previous-lst)))
            (append '(earlier you said) (pick-random previous-lst)))
           ((= rndm 1)
            (append (qualifier)
