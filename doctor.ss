@@ -2,96 +2,67 @@
 (define (pick-random lst)
   (list-ref lst (random (length lst))))
 
-;(define (many-replace replacement-pairs lst)
-;  (cond ((null? replacement-pairs) lst)
-;        (else (let ((pat-rep (car replacement-pairs)))
-;                (replace (car pat-rep)
-;                         (cadr pat-rep)
-;                         (many-replace (cdr replacement-pairs) lst))))))
-
-;(define (replace pattern replacement lst)
-;  (cond ((null? lst) '())
- ;       ((equal? (car lst) pattern)
- ;        (cons replacement
- ;              (replace pattern replacement (cdr lst))))
- ;       (else
- ;        (cons (car lst)
- ;              (replace pattern replacement (cdr lst))))))
-
 (define (change-person phrase)
-  (many-replace '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) phrase))
+  (map (lambda (x) (replace '((are am) (me you) (am are) (my your) (you i) (are am) (your my)) x)) phrase))
 
-(define (many-replace replacement-pairs lst) ;переделанная процедура для замены слов во фразе
-  (cond ((null? lst) '())
-        (else 
-         (cons (replace replacement-pairs (car lst)) (many-replace replacement-pairs (cdr lst))))))
 
 (define (replace replacement-pairs word) ;переделанная процедура для замены слов
   (cond ((null? replacement-pairs) word)
         ((equal? (car (car replacement-pairs)) word) (cadr (car replacement-pairs)))
         (else (replace (cdr replacement-pairs) word))))
-  
 
 (define (qualifier)
-  (pick-random '((you seem to think)
-                 (you feel that)
-                 (why do you believe)
-                 (why do you say)
-                 (why do you think problem is that)
-                 (when did you explore that))))
+ (append (pick-random '((why do you)
+                        (when did you)
+                        (you seem to)))
+         (pick-random '((think problem is that)
+                        (say)
+                        (believe)
+                        (think)))))
 (define (hedge)
   (pick-random '((please go on)
                  (many people have the same sorts of feelings)
                  (many of my patients have told me the same thing)
                  (please continue)
                  (it is very widespread problem)
-                 (i understand))))
+                 (i understand)
+                 (what the problem?))))
 
-;(define (fifty-fifty)
-;  (= (random 2) 0))
+(define (prob) (random 4))
 
-(define (prob) (random 3))
+(define (word-is-in-the-list? lst word)
+  (cond ((null? lst) #f)
+        ((equal? (car lst) word) #t)
+        (else (word-is-in-the-list? (cdr lst) word))))
 
-(define (is-depressed-or-parents user-resp) ;процедура, проверяющая идет ли речь о родителях или депрессии
-  (cond ((null? user-resp)
-         0)
-        ((or (equal? (car user-resp) 'depressed)
-             (equal? (car user-resp) 'suicide))
-         1)
-        ((or (equal? (car user-resp) 'mother)
-             (equal? (car user-resp) 'father)
-             (equal? (car user-resp) 'family)
-             (equal? (car user-resp) 'mom)
-             (equal? (car user-resp) 'dad))
-         2)
-        (else (is-depressed-or-parents (cdr user-resp)))))
-  
+(define (phrase-is-in-the-list? lst phrase result)
+  (if (null? phrase)
+      result
+      (phrase-is-in-the-list? lst (cdr phrase) (or result (word-is-in-the-list? lst (car phrase))))))
+
+(define (family-or-depressed lst phrase)
+  (cond ((null? phrase) (hedge))
+        ((phrase-is-in-the-list? (car (car lst)) phrase #f) (pick-random (cadr (car lst))))
+        (else (family-or-depressed (cdr lst) phrase)))) 
 
 (define (reply user-response previous-lst)
-  (let ((rndm (prob))
-        (check-depressed-parents (is-depressed-or-parents user-response)))
-    (cond ((< (length user-response) 3)
-           '(could you say more?))
-          ((> check-depressed-parents 0)
-           (cond ((= check-depressed-parents 1)
-                  (pick-random '((when you feel depressed, go out for ice cream)
-                                 (depression is a disease that can be treated))))
-                 (else
-                  (pick-random '((tell me more about your family)
-                                 (why do you feel that way about your parents?))))))
-          ((and (= rndm 0) (not (null? previous-lst)))
+  (let ((rndm (prob)))
+    (cond ((and (= rndm 0) (not (null? previous-lst)))
            (append '(earlier you said) (change-person (pick-random previous-lst))))
           ((= rndm 1)
            (append (qualifier)
                    (change-person user-response)))
+          ((= rndm 2)
+           (family-or-depressed '(
+                                  ((depressed suicide)
+                                   ((when you feel depressed, go out for the scream)
+                                    (depression is a disease that can be treated)))
+                                  ((mother father family parents mom dad)
+                                   ((tell me more about your *)
+                                    (why do you feel that way about your * ?))))
+                                           user-response))
           (else (hedge)))))
            
-  
- ; (cond ((fifty-fifty)
-  ;       (append (qualifier)
-  ;               (change-person user-response)))
-  ;      (else (hedge))))
-
 (define (ask-patient-name);процедура считывания имени
   (newline)
   (print '(next!))
