@@ -43,36 +43,38 @@
       result
       (phrase-is-in-the-list? lst (cdr phrase) (or result (word-is-in-the-list? lst (car phrase))))))
 
-(define (family-or-depressed lst phrase)
-  (cond ((null? lst) (hedge))
-        ((phrase-is-in-the-list? (car (car lst)) phrase #f) (pick-random (cadr (car lst))))
-        (else (family-or-depressed (cdr lst) phrase)))) 
+(define (get-words lst phrase)
+  (if (null? lst)
+      '()
+      (append (filter
+               (lambda (x) (word-is-in-the-list? (car (car lst)) x)) phrase)
+              (get-words (cdr lst) phrase))))
 
-(define (reply-old user-response previous-lst)
-  (let ((rndm (prob)))
-    (cond ((and (= rndm 0) (not (null? previous-lst)))
-           (append '(earlier you said) (change-person (pick-random previous-lst))))
-          ((= rndm 1)
-           (append (qualifier)
-                   (change-person user-response)))
-          ((= rndm 2)
-           (family-or-depressed '(
-                                  ((depressed suicide)
-                                   ((when you feel depressed, go out for the scream)
-                                    (depression is a disease that can be treated)))
-                                  ((mother father family parents mom dad)
-                                   ((tell me more about your family)
-                                    (why do you feel that way about your parents?))))
-                                           user-response))
-          (else (hedge)))))
+(define (get-phrase lst word)
+  (cond ((null? lst)
+         '())
+        ((word-is-in-the-list? (car (car lst)) word)
+         (pick-random (cadr (car lst))))
+        (else (get-phrase (cdr lst) word))))
+      
+
+
+(define (family-or-depressed2 lst phrase)
+  (let ((possible-words (get-words lst phrase)))
+    (if (null? possible-words)
+        (hedge)
+        (get-phrase lst (pick-random (filter (lambda (x) (not (null? x))) possible-words))))))
+
+
 
 (define (reply usr-resp prev-lst predicates-procs)
   (let ((possible-variants (map (lambda (x)
-                                  (if ((car x) usr-resp prev-lst)
-                                      (cadr x)
+                                  (if ((cadr x) usr-resp prev-lst)
+                                      (list (car x) (caddr x))
                                       (list)))
                                 predicates-procs)))
-    ((pick-random (filter (lambda (x) (not (null? x))) possible-variants)) usr-resp prev-lst)))
+    ((cadr (pick-random-by-weight2 (sum-weight (filter (lambda (x) (not (null? x))) possible-variants) 0)
+                                   (filter (lambda (x) (not (null? x))) possible-variants))) usr-resp prev-lst)))
            
 (define (ask-patient-name);процедура считывания имени
   (newline)
@@ -88,19 +90,46 @@
   (print '(see you next week))
   (visit-doctor))
 
+(define (pick-random-by-weight lst)
+  (let ((max-weight (max lst)))
+    (pick-random (filter (lambda (x) (= (car x) (car max-weight))) lst))))
+
+(define (sum-weight lst result)
+  (if (null? lst)
+      result
+      (sum-weight (cdr lst) (+ (car (car lst)) result))))
+
+(define (pick-random-by-weight2 sum lst)
+  (let ((rnd (random sum)))
+    (cond ((null? (cdr lst))
+           (car lst))
+          ((and (> (sum-weight lst 0) rnd) (< (sum-weight (cdr lst) 0) rnd))
+           (car lst))
+          (else (pick-random-by-weight2 sum (cdr lst))))))
+
+(define (max lst)
+  (let ((y (car (car lst))))
+    (if (null? (cdr lst))
+        (car lst)
+        (let ((m (max (cdr lst))))
+          (if (> (car m) y)
+              m
+              (car lst))))))
+
+
 (define (print-reply name user-resp prev-lst)
   ;(print (reply-old user-resp prev-lst))
   (print (reply user-resp
                 prev-lst
                 (list
-                  (list (lambda (ur pl) (< (length ur) 3)) (lambda (ur pl) '(Could you say more?)))
-                  (list (lambda (ur pl) #t) (lambda (ur pl) (append (qualifier) (change-person ur))))
-                  (list (lambda (ur pl) #t) (lambda (ur pl) (hedge)))
-                  (list (lambda (ur pl) (not (null? pl))) (lambda (ur pl)
+                  (list 2 (lambda (ur pl) (< (length ur) 3)) (lambda (ur pl) '(Could you say more?)))
+                  (list 1 (lambda (ur pl) #t) (lambda (ur pl) (append (qualifier) (change-person ur))))
+                  (list 1 (lambda (ur pl) #t) (lambda (ur pl) (hedge)))
+                  (list 4 (lambda (ur pl) (not (null? pl))) (lambda (ur pl)
                                                             (append '(earlier you said)
                                                                     (change-person (pick-random pl)))))
-                  (list (lambda (ur pl) #t) (lambda (ur pl)
-                                              (family-or-depressed '(
+                  (list 2 (lambda (ur pl) #t) (lambda (ur pl)
+                                              (family-or-depressed2 '(
                                                                      ((depressed suicide)
                                                                       ((when you feel depressed, go out for the scream)
                                                                        (depression is a disease that can be treated)))
